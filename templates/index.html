@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rice Disease Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        .container {
+            margin: 50px auto;
+            max-width: 600px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .upload-area {
+            margin: 20px 0;
+        }
+        .upload-area input[type="file"] {
+            margin: 10px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .result p {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+        .result img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rice Disease Detection</h1>
+        <p>Upload an image of a rice leaf to detect the disease and get treatment suggestions.</p>
+
+        <div class="upload-area">
+            <input type="file" id="imageInput" accept="image/*">
+            <button class="btn" onclick="analyzeImage()">Analyze</button>
+        </div>
+
+        <div id="analysisResult" class="result"></div>
+    </div>
+
+    <script>
+        async function analyzeImage() {
+            const imageInput = document.getElementById("imageInput");
+            const resultDiv = document.getElementById("analysisResult");
+
+            // Clear previous results
+            resultDiv.innerHTML = '';
+
+            if (!imageInput.files.length) {
+                resultDiv.innerHTML = `<p style="color: red;">Please upload an image!</p>`;
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', imageInput.files[0]);
+
+            try {
+                // Send the image to the Flask backend
+                const response = await fetch('http://127.0.0.1:5000/predict', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+
+                // Parse the JSON response
+                const data = await response.json();
+
+                // Debugging: Log the response data to verify its structure
+                console.log(data);
+
+                // Extract relevant fields from the response
+                const { disease, treatment_hindi, treatment_english, cause, medicine_image } = data;
+
+                // Display the results
+                resultDiv.innerHTML = `
+                    <p><strong>Disease Detected:</strong> ${disease}</p>
+                    <p><strong>Reason (Hindi):</strong> ${cause}</p>
+                    <p><strong>Treatment (Hindi):</strong> ${treatment_hindi}</p>
+                    <p><strong>Treatment (English):</strong> ${treatment_english}</p>
+                    ${medicine_image ? `<img src="${medicine_image}" alt="Medicine Image">` : ''}
+                `;
+            } catch (error) {
+                // Handle errors (e.g., network errors or issues with the Flask backend)
+                console.error(error); // Log the error for debugging
+                resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
